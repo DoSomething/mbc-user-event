@@ -17,16 +17,53 @@ require __DIR__ . '/mb-config.inc';
 
 class MBC_UserEvent_Birthday
 {
-  
-  /**
-   * Counter of the number of recipients processed out of the queue
-   */
-  private $recipientCount;
+
+  const BATCH_SIZE = 500;
 
   /**
-   * Batch of birthdays collected from the queue
+   * Message Broker connection to RabbitMQ
+   */
+  private $messageBroker;
+
+  /**
+   * Configuration settings
+   */
+  private $config;
+
+  /**
+   * Configuration settings
+   */
+  private $channel;
+
+  /**
+   * A list of recipients to send messages to
    */
   private $recipients;
+
+  /**
+   * Setting from external services - Mailchimp.
+   *
+   * @var array
+   */
+  private $statHat;
+
+  /**
+   * Constructor - setup parameters to be accessed by class methods
+   *
+   * @param array $messageCount
+   *   The number of messages currently in the queue wait to be consumed.
+   *
+   * @param object $messageBroker
+   *   The connection object to the RabbitMQ server.
+   */
+  public function __construct($credentials, $config) {
+    $this->messageBroker = new MessageBroker($credentials, $config);
+    $this->config = $config;
+    $this->channel = $this->messageBroker->connection->channel();
+
+    // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_birthday:');
+    // $this->statHat->setIsProduction(FALSE);
+  }
 
   /**
    * Consume userBirthday queue to collect data for Mandrill Send-Template
@@ -35,74 +72,69 @@ class MBC_UserEvent_Birthday
    * @param array $payload
    *   The contents of the queue entry
    */
-  public function consumeBirthdayQueue($payload) {
-  
-    echo '------- MBC_UserEvent_Birthday->consumeBirthdayQueue START - ' . date('D M j G:i:s:u T Y') . ' -------', "\n";
+  public function consumeBirthdayQueue() {
 
-    $this->recipientCount++;
-    $queueIsEmpty =
-    
-    
-    // Get the status details of the queue by requesting a declare
-    list($this->channel, $status) = $this->MessageBroker->setupQueue($this->config['queue']['registrations']['name'], $this->channel);
+    $this->recipients = array();
 
+    // How many messages are waiting to be processed?
+    list($this->channel, $status) = $this->messageBroker->setupQueue($this->config['queue'][0]['name'], $this->channel);
     $messageCount = $status[1];
-    // @todo: Respond to unacknowledged messages
-    $unackedCount = $status[2];
-    
-    
-    
-    $payloadDetails = unserialize($payload->body);
-    $this->recipients[] = array(
-      'email' => $payloadDetails['email'],
-      'FNAME' => $payloadDetails['first_name'],
-    );
-    
-    // If birthday count = 500 or queue is empty, build and send Mandrill submisison
-    if ($this->recipientCount >= 500 || $queueIsEmpty) {
-      $this->sendBirthdayEmail();
+    $processedCount = 0;
+
+    while ($messageCount > 0 && $processedCount <= self::BATCH_SIZE) {
+      $messageDetails = $this->channel->basic_get($this->config['queue'][0]['name']);
+      $messagePayload = unserialize($messageDetails->body);
+      $this->recipients[] = array(
+        'email' => $messagePayload['email'],
+        'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
+        'merge_vars' => array(
+          'FNAME' => $messagePayload['merge_vars']['FNAME'],
+        )
+      );
+      $messageCount--;
+      $processedCount++;
     }
-    
-    echo '------- MBC_UserEvent_Birthday->consumeBirthdayQueue END  - ' . date('D M j G:i:s:u T Y') . ' -------', "\n";
+
+    $this->sendBirthdayEmails();
+
   }
-  
+
   /**
    * Send user birthday email
    *
    * @param array $payload
    *   The contents of the queue entry
    */
-  private function sendBirthdayEmail() {
-    
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmail START - ' . date('D M j G:i:s:u T Y') . ' -------', "\n";
-    
+  private function sendBirthdayEmails() {
+
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails START - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+
     $to = array();
     $merge_vars = array();
-    
+
     // Build out $message to send to Mandrill
     foreach ($this->recipients as $recipient) {
       $to[] = array(
-        array(
-          'email' => $recipient['email'],
-          'name' => $recipient['FNAME'],
-        ),
+        'email' => $recipient['email'],
+        'name' => $recipient['merge_vars']['FNAME'],
       );
       $merge_vars[] = array(
-        array(
-          'rcpt' => $recipient['email'],
-          'vars' => array(
+        'rcpt' => $recipient['email'],
+        'vars' => array(
+          0 => array(
             'name' => 'FNAME',
-            'content' => $recipient['FNAME'],
+            'content' => $recipient['merge_vars']['FNAME'],
           ),
         ),
       );
+      $delivery_tags[] = $recipient['delivery_tag'];
     }
-    
-    $templateName = '';
-    $templateContent = '';
+
+    $templateName = 'mb-user-birthday';
+    $templateContent = array();
     $message = array(
       'from_email' => 'no-reply@dosomething.org',
-      'from_name' => 'DoSomething',
+      'from_name' => 'DoSomething.org',
       'subject' => 'Happy Birthday from DoSomething.org',
       'to' => $to,
       'merge_vars' => $merge_vars,
@@ -111,17 +143,25 @@ class MBC_UserEvent_Birthday
 
     // Use the Mandrill service
     $mandrill = new Mandrill();
-    
+
     // Send message
     $mandrillResults = $mandrill->messages->sendTemplate($templateName, $templateContent, $message);
-    
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmail END: ' . $this->recipientCount . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s:u T Y') . ' -------', "\n";
-    
-    // Reset counter
-    $this->recipientCount = 0;
-    
+
+    // ack messages to remove them from the queue, trap errors
+    foreach($mandrillResults as $resultCount => $resultDetails) {
+      if ($resultDetails['status'] == 'invalid') {
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+      }
+      elseif (!$resultDetails['status'] == 'sent') {
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+      }
+      $this->channel->basic_ack($delivery_tags[$resultCount]);
+    }
+
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+
   }
-  
+
 }
 
 // Settings
@@ -154,12 +194,10 @@ $config = array(
   'routingKey' => getenv("MB_USER_EVENT_BIRTHDAY_ROUTING_KEY"),
 );
 
-$status = NULL;
-
 echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
-// Kick off
-$mb = new MessageBroker($credentials, $config);
-$mb->consumeMessage(array(new MBC_UserEvent_Birthday(), 'consumeBirthdayQueue'));
+// Kick Off
+$ub = new MBC_UserEvent_Birthday($credentials, $config);
+$ub->consumeBirthdayQueue();
 
 echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
