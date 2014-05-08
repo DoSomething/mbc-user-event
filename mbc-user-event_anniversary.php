@@ -1,13 +1,13 @@
 <?php
 /**
- * mbc-user-event.php
+ * mbc-user-event_anniversary.php
  *
- * Collect users for different event types based on a specific date (typically
- * today). Users found are added to the event queues to be consumed by
- * mbc-user-event.
+ * Process entries in userEventAnniversaryQueue to create a daily batch
+ * submission to Mandrill. Mandrill will take care of composing an anniversary
+ * email based on the email address and related merge_vars in the submission. 
  */
 
-// Load up the Composer autoload magic
+// Load the Composer autoload magic
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Load configuration settings common to the Message Broker system
@@ -18,6 +18,9 @@ require __DIR__ . '/mb-config.inc';
 class MBC_UserEvent_Anniversary
 {
 
+  /**
+   * The size (number of email addresses) in the submission to Mandrill
+   */
   const BATCH_SIZE = 500;
 
   /**
@@ -61,6 +64,7 @@ class MBC_UserEvent_Anniversary
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
 
+    // @todo: Impliment monitoring
     // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_anniversary:');
     // $this->statHat->setIsProduction(FALSE);
   }
