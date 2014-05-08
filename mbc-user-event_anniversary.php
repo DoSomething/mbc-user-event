@@ -61,7 +61,7 @@ class MBC_UserEvent_Anniversary
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
 
-    // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_birthday:');
+    // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_anniversary:');
     // $this->statHat->setIsProduction(FALSE);
   }
 
@@ -82,10 +82,15 @@ class MBC_UserEvent_Anniversary
     $processedCount = 0;
 
     while ($messageCount > 0 && $processedCount <= self::BATCH_SIZE) {
+
+      // Collect message out of queue
       $messageDetails = $this->channel->basic_get($this->config['queue'][0]['name']);
       $messagePayload = unserialize($messageDetails->body);
+
+      // Calculate the ordinal suffix, 1st, 2nd, 3rd, etc
       $years = date('Y') - $messagePayload['year'];
       $anniversary = $years . date('S', mktime(1, 1, 1, 1, ( (($years >= 10) + ($years >= 20) + ($years == 0))*10 + $years%10) ));
+
       $this->recipients[] = array(
         'email' => $messagePayload['email'],
         'uid' => $messagePayload['drupal_uid'],
@@ -208,7 +213,7 @@ $config = array(
 echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
 // Kick Off
-$ub = new MBC_UserEvent_Anniversary($credentials, $config);
-$ub->consumeAnniversaryQueue();
+$ua = new MBC_UserEvent_Anniversary($credentials, $config);
+$ua->consumeAnniversaryQueue();
 
 echo '------- mbp-user-event_anniversary END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
