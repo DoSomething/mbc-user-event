@@ -9,6 +9,7 @@
 
 // Load up the Composer autoload magic
 require_once __DIR__ . '/vendor/autoload.php';
+use DoSomething\MBStatTracker\StatHat;
 
 // Load configuration settings common to the Message Broker system
 // symlinks in the project directory point to the actual location of the files
@@ -61,8 +62,8 @@ class MBC_UserEvent_Birthday
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
 
-    // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_birthday:');
-    // $this->statHat->setIsProduction(FALSE);
+    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_birthday:');
+    $this->statHat->setIsProduction(TRUE);
   }
 
   /**
@@ -94,6 +95,9 @@ class MBC_UserEvent_Birthday
       $messageCount--;
       $processedCount++;
     }
+
+    $this->statHat->addStatName('consumeBirthdayQueue');
+    $this->statHat->reportCount($processedCount);
 
     $this->sendBirthdayEmails();
 
@@ -151,9 +155,13 @@ class MBC_UserEvent_Birthday
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
         echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
+        $this->statHat->reportCount(1);
       }
       elseif (!$resultDetails['status'] == 'sent') {
         echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
+        $this->statHat->reportCount(1);
       }
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
