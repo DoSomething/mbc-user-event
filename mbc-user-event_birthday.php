@@ -163,6 +163,10 @@ class MBC_UserEvent_Birthday
         $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
         $this->statHat->reportCount(1);
       }
+      else {
+        $this->statHat->addStatName('sendBirthdayEmails_MandrillSent');
+        $this->statHat->reportCount(1);
+      }
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
