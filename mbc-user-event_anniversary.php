@@ -73,12 +73,6 @@ class MBC_UserEvent_Anniversary
    *   The contents of the queue entry
    */
   public function consumeAnniversaryQueue() {
-    
-    
-$bla = FALSE;
-if ($bla) {
-  $bla = TRUE;
-}
 
     $this->recipients = array();
 
@@ -115,12 +109,6 @@ if ($bla) {
    *   The contents of the queue entry
    */
   private function sendAnniversaryEmails() {
-    
-    
-$bla = FALSE;
-if ($bla) {
-  $bla = TRUE;
-}
 
     echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails START - ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
@@ -152,99 +140,6 @@ if ($bla) {
       );
       $delivery_tags[] = $recipient['delivery_tag'];
     }
-    
-    $to = array();
-    $to[0] = array(
-      'email' => 'dlee@dosomething.org',
-      'name' => 'Darren',
-    );
-    $to[1] = array(
-      'email' => 'mlidey@dosomething.org',
-      'name' => 'Marah',
-    );
-    $to[2] = array(
-      'email' => 'cbell@dosomething.org',
-      'name' => 'Crystal',
-    );
-    $to[3] = array(
-      'email' => 'juy@dosomething.org',
-      'name' => 'Jonathan',
-    );
-    $merge_vars = array();
-    $merge_vars[0] = array(
-      'rcpt' => 'dlee@dosomething.org',
-      'vars' => array(
-        0 => array(
-          'name' => 'FNAME',
-          'content' => 'Darren',
-        ),
-        1 => array(
-          'name' => 'ANNIVERSARY',
-          'content' => '2nd',
-        ),
-        2 => array(
-          'name' => 'UID',
-          'content' => '123456',
-        )
-      ),
-    );
-    $merge_vars[1] = array(
-      'rcpt' => 'mlidey@dosomething.org',
-      'vars' => array(
-        0 => array(
-          'name' => 'FNAME',
-          'content' => 'Marah',
-        ),
-        1 => array(
-          'name' => 'ANNIVERSARY',
-          'content' => '3rd',
-        ),
-        2 => array(
-          'name' => 'UID',
-          'content' => '234567',
-        )
-      ),
-    );
-    $merge_vars[2] = array(
-      'rcpt' => 'cbell@dosomething.org',
-      'vars' => array(
-        0 => array(
-          'name' => 'FNAME',
-          'content' => 'Crystal',
-        ),
-        1 => array(
-          'name' => 'ANNIVERSARY',
-          'content' => '1st',
-        ),
-        2 => array(
-          'name' => 'UID',
-          'content' => '345678',
-        )
-      ),
-    );
-    $merge_vars[3] = array(
-      'rcpt' => 'juy@dosomething.org',
-      'vars' => array(
-        0 => array(
-          'name' => 'FNAME',
-          'content' => 'Jonathan',
-        ),
-        1 => array(
-          'name' => 'ANNIVERSARY',
-          'content' => '5th',
-        ),
-        2 => array(
-          'name' => 'UID',
-          'content' => '345678',
-        )
-      ),
-    );
-    
-    
-$bla = FALSE;
-if ($bla) {
-  $bla = TRUE;
-}
 
     $templateName = 'mb-user-anniversary';
     $templateContent = array();
