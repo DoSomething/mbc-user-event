@@ -79,6 +79,7 @@ class MBC_UserEvent_Birthday
       $messagePayload = unserialize($messageDetails->body);
       $this->recipients[] = array(
         'email' => $messagePayload['email'],
+        'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
         )
@@ -119,6 +120,7 @@ class MBC_UserEvent_Birthday
           ),
         ),
       );
+      $delivery_tags[] = $recipient['delivery_tag'];
     }
 
     $templateName = 'mb-user-birthday';
@@ -138,10 +140,21 @@ class MBC_UserEvent_Birthday
     // Send message
     $mandrillResults = $mandrill->messages->sendTemplate($templateName, $templateContent, $message);
 
+    // ack messages to remove them from the queue, trap errors
+    foreach($mandrillResults as $resultCount => $resultDetails) {
+      if ($resultDetails['status'] == 'invalid') {
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+      }
+      elseif (!$resultDetails['status'] == 'sent') {
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+      }
+      $this->channel->basic_ack($delivery_tags[$resultCount]);
+    }
+
     echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
   }
-  
+
 }
 
 // Settings
