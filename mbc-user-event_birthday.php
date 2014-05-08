@@ -36,6 +36,11 @@ class MBC_UserEvent_Birthday
   private $channel;
 
   /**
+   * A list of recipients to send messages to
+   */
+  private $recipients;
+
+  /**
    * Setting from external services - Mailchimp.
    *
    * @var array
@@ -68,6 +73,8 @@ class MBC_UserEvent_Birthday
    *   The contents of the queue entry
    */
   public function consumeBirthdayQueue() {
+
+    $this->recipients = array();
 
     // How many messages are waiting to be processed?
     list($this->channel, $status) = $this->messageBroker->setupQueue($this->config['queue'][0]['name'], $this->channel);
