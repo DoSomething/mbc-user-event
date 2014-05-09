@@ -57,7 +57,7 @@ class MBC_UserEvent_Birthday
    * @param object $messageBroker
    *   The connection object to the RabbitMQ server.
    */
-  public function __construct($credentials, $config) {
+  public function __construct($credentials, $config, $settings) {
     $this->messageBroker = new MessageBroker($credentials, $config);
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
