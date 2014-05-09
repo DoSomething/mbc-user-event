@@ -9,6 +9,7 @@
 
 // Load the Composer autoload magic
 require_once __DIR__ . '/vendor/autoload.php';
+use DoSomething\MBStatTracker\StatHat;
 
 // Load configuration settings common to the Message Broker system
 // symlinks in the project directory point to the actual location of the files
@@ -59,14 +60,13 @@ class MBC_UserEvent_Anniversary
    * @param object $messageBroker
    *   The connection object to the RabbitMQ server.
    */
-  public function __construct($credentials, $config) {
+  public function __construct($credentials, $config, $settings) {
     $this->messageBroker = new MessageBroker($credentials, $config);
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
 
-    // @todo: Impliment monitoring
-    // $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_anniversary:');
-    // $this->statHat->setIsProduction(FALSE);
+    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_anniversary:');
+    $this->statHat->setIsProduction(TRUE);
   }
 
   /**
@@ -107,6 +107,9 @@ class MBC_UserEvent_Anniversary
       $messageCount--;
       $processedCount++;
     }
+
+    $this->statHat->addStatName('consumeAnniversaryQueue');
+    $this->statHat->reportCount($processedCount);
 
     $this->sendAnniversaryEmails();
   }
@@ -171,9 +174,13 @@ class MBC_UserEvent_Anniversary
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_invalid');
+        $this->statHat->reportCount(1);
       }
       elseif (!$resultDetails['status'] == 'sent') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
+        $this->statHat->reportCount(1);
       }
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
@@ -213,11 +220,14 @@ $config = array(
   ),
   'routingKey' => getenv("MB_USER_EVENT_ANNIVERSARY_ROUTING_KEY"),
 );
+$settings = array(
+  'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+);
 
 echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
 // Kick Off
-$ua = new MBC_UserEvent_Anniversary($credentials, $config);
+$ua = new MBC_UserEvent_Anniversary($credentials, $config, $settings);
 $ua->consumeAnniversaryQueue();
 
 echo '------- mbp-user-event_anniversary END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
