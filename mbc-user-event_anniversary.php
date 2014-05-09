@@ -60,7 +60,7 @@ class MBC_UserEvent_Anniversary
    * @param object $messageBroker
    *   The connection object to the RabbitMQ server.
    */
-  public function __construct($credentials, $config) {
+  public function __construct($credentials, $config, $settings) {
     $this->messageBroker = new MessageBroker($credentials, $config);
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
@@ -220,11 +220,14 @@ $config = array(
   ),
   'routingKey' => getenv("MB_USER_EVENT_ANNIVERSARY_ROUTING_KEY"),
 );
+$settings = array(
+  'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+);
 
 echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
 // Kick Off
-$ua = new MBC_UserEvent_Anniversary($credentials, $config);
+$ua = new MBC_UserEvent_Anniversary($credentials, $config, $settings);
 $ua->consumeAnniversaryQueue();
 
 echo '------- mbp-user-event_anniversary END: ' . date('D M j G:i:s T Y') . ' -------', "\n";

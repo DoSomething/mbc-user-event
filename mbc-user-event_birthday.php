@@ -205,11 +205,14 @@ $config = array(
   ),
   'routingKey' => getenv("MB_USER_EVENT_BIRTHDAY_ROUTING_KEY"),
 );
+$settings = array(
+  'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+);
 
 echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
 // Kick Off
-$ub = new MBC_UserEvent_Birthday($credentials, $config);
+$ub = new MBC_UserEvent_Birthday($credentials, $config, $settings);
 $ub->consumeBirthdayQueue();
 
 echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
