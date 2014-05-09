@@ -182,6 +182,10 @@ class MBC_UserEvent_Anniversary
         $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
         $this->statHat->reportCount(1);
       }
+      else {
+        $this->statHat->addStatName('sendAnniversaryEmails_MandrillSent');
+        $this->statHat->reportCount(1);
+      }
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
