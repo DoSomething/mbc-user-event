@@ -62,7 +62,7 @@ class MBC_UserEvent_Birthday
     $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
 
-    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc_user_event_birthday:');
+    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc-user-event_birthday:');
     $this->statHat->setIsProduction(TRUE);
   }
 
