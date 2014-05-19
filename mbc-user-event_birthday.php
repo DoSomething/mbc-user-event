@@ -158,7 +158,7 @@ class MBC_UserEvent_Birthday
         $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
         $this->statHat->reportCount(1);
       }
-      elseif (!$resultDetails['status'] == 'sent') {
+      elseif (!$resultDetails['status'] == 'sent' && !$resultDetails['status'] == 'queued') {
         echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
         $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
         $this->statHat->reportCount(1);
