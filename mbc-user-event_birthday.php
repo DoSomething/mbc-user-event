@@ -76,6 +76,8 @@ class MBC_UserEvent_Birthday
   public function consumeBirthdayQueue() {
 
     $this->recipients = array();
+    
+    $this->statHat->addStatName('consumeBirthdayQueue');
 
     // How many messages are waiting to be processed?
     list($this->channel, $status) = $this->messageBroker->setupQueue($this->config['queue'][0]['name'], $this->channel);
@@ -96,7 +98,6 @@ class MBC_UserEvent_Birthday
       $processedCount++;
     }
 
-    $this->statHat->addStatName('consumeBirthdayQueue');
     $this->statHat->reportCount($processedCount);
 
     $this->sendBirthdayEmails();
