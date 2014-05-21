@@ -174,15 +174,18 @@ class MBC_UserEvent_Anniversary
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->clearAddedStatNames();
         $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_invalid');
         $this->statHat->reportCount(1);
       }
       elseif (!$resultDetails['status'] == 'sent') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        $this->statHat->clearAddedStatNames();
         $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
         $this->statHat->reportCount(1);
       }
       else {
+        $this->statHat->clearAddedStatNames();
         $this->statHat->addStatName('sendAnniversaryEmails_MandrillSent');
         $this->statHat->reportCount(1);
       }
