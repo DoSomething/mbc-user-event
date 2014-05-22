@@ -35,6 +35,11 @@ class MBC_UserEvent_Anniversary
   private $config;
 
   /**
+   * Settings
+   */
+  private $settings;
+
+  /**
    * Configuration settings
    */
   private $channel;
@@ -43,13 +48,6 @@ class MBC_UserEvent_Anniversary
    * A list of recipients to send messages to
    */
   private $recipients;
-
-  /**
-   * Setting from external services - Mailchimp.
-   *
-   * @var array
-   */
-  private $statHat;
 
   /**
    * Constructor - setup parameters to be accessed by class methods
@@ -62,11 +60,9 @@ class MBC_UserEvent_Anniversary
    */
   public function __construct($credentials, $config, $settings) {
     $this->messageBroker = new MessageBroker($credentials, $config);
-    $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
-
-    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc-user-event_anniversary:');
-    $this->statHat->setIsProduction(TRUE);
+    $this->config = $config;
+    $this->settings = $settings;
   }
 
   /**
@@ -108,8 +104,10 @@ class MBC_UserEvent_Anniversary
       $processedCount++;
     }
 
-    $this->statHat->addStatName('consumeAnniversaryQueue');
-    $this->statHat->reportCount($processedCount);
+    $statHat = new StatHat($this->settings['stathat_ez_key'], 'mbc-user-event_anniversary:');
+    $statHat->setIsProduction(TRUE);
+    $statHat->addStatName('consumeAnniversaryQueue');
+    $statHat->reportCount($processedCount);
 
     $this->sendAnniversaryEmails();
   }
@@ -170,25 +168,25 @@ class MBC_UserEvent_Anniversary
     // Send message
     $mandrillResults = $mandrill->messages->sendTemplate($templateName, $templateContent, $message);
 
+    $statHat = new StatHat($this->settings['stathat_ez_key'], 'mbc-user-event_anniversary:');
+    $statHat->setIsProduction(TRUE);
+
     // ack messages to remove them from the queue, trap errors
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
-        $this->statHat->clearAddedStatNames();
-        $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_invalid');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendAnniversaryEmails_MandrillERROR_invalid');
       }
       elseif (!$resultDetails['status'] == 'sent') {
         echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
-        $this->statHat->clearAddedStatNames();
-        $this->statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
       }
       else {
-        $this->statHat->clearAddedStatNames();
-        $this->statHat->addStatName('sendAnniversaryEmails_MandrillSent');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendAnniversaryEmails_MandrillSent');
       }
+      $statHat->reportCount(1);
+      $statHat->clearAddedStatNames();
+
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
