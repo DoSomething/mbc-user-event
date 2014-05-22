@@ -32,6 +32,11 @@ class MBC_UserEvent_Birthday
   private $config;
 
   /**
+   * Settings
+   */
+  private $settings;
+
+  /**
    * Configuration settings
    */
   private $channel;
@@ -40,13 +45,6 @@ class MBC_UserEvent_Birthday
    * A list of recipients to send messages to
    */
   private $recipients;
-
-  /**
-   * Setting from external services - Mailchimp.
-   *
-   * @var array
-   */
-  private $statHat;
 
   /**
    * Constructor - setup parameters to be accessed by class methods
@@ -59,11 +57,9 @@ class MBC_UserEvent_Birthday
    */
   public function __construct($credentials, $config, $settings) {
     $this->messageBroker = new MessageBroker($credentials, $config);
-    $this->config = $config;
     $this->channel = $this->messageBroker->connection->channel();
-
-    $this->statHat = new StatHat($settings['stathat_ez_key'], 'mbc-user-event_birthday:');
-    $this->statHat->setIsProduction(TRUE);
+    $this->config = $config;
+    $this->settings = $settings;
   }
 
   /**
@@ -96,8 +92,10 @@ class MBC_UserEvent_Birthday
       $processedCount++;
     }
 
-    $this->statHat->addStatName('consumeBirthdayQueue');
-    $this->statHat->reportCount($processedCount);
+    $statHat = new StatHat($this->settings['stathat_ez_key'], 'mbc-user-event_birthday:');
+    $statHat->setIsProduction(TRUE);
+    $statHat->addStatName('consumeBirthdayQueue');
+    $statHat->reportCount($processedCount);
 
     $this->sendBirthdayEmails();
 
@@ -147,26 +145,27 @@ class MBC_UserEvent_Birthday
 
     // Use the Mandrill service
     $mandrill = new Mandrill();
-
-    // Send message
     $mandrillResults = $mandrill->messages->sendTemplate($templateName, $templateContent, $message);
+
+    $statHat = new StatHat($this->settings['stathat_ez_key'], 'mbc-user-event_birthday:');
+    $statHat->setIsProduction(TRUE);
 
     // ack messages to remove them from the queue, trap errors
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
         echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
-        $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
       }
       elseif (!$resultDetails['status'] == 'sent' && !$resultDetails['status'] == 'queued') {
         echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
-        $this->statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
       }
       else {
-        $this->statHat->addStatName('sendBirthdayEmails_MandrillSent');
-        $this->statHat->reportCount(1);
+        $statHat->addStatName('sendBirthdayEmails_MandrillSent');
       }
+      $statHat->reportCount(1);
+      $statHat->clearAddedStatNames();
+
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 

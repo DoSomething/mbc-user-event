@@ -1,7 +1,7 @@
 {
     "name": "DoSomething/mbc-user-event",
     "type": "library",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Consumer applications for the Message Broker system that consumes entries in the userEvent queues - birthday, anniversary, turning 13. The queue entries are sent to Mandrill as a single Send-Template request daily.",
     "keywords": ["message broker"],
     "homepage": "https://github.com/DoSomething/mbp-user-event",
@@ -17,7 +17,7 @@
         "videlalvaro/php-amqplib": "v2.1.0",
         "DoSomething/messagebroker-phplib": "0.1.*",
         "mandrill/mandrill": "1.0.50",
-        "dosomething/mb-stat-tracker": "v0.0.2"
+        "dosomething/mb-stat-tracker": "v0.0.3"
     },
     "require-dev": {
       "phpunit/phpunit": "3.7.*"
