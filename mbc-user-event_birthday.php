@@ -19,7 +19,7 @@ require __DIR__ . '/mb-config.inc';
 class MBC_UserEvent_Birthday
 {
 
-  const BATCH_SIZE = 500;
+  const BATCH_SIZE = 5;
 
   /**
    * Message Broker connection to RabbitMQ
@@ -169,7 +169,7 @@ class MBC_UserEvent_Birthday
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
   }
 
