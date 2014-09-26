@@ -19,7 +19,7 @@ require __DIR__ . '/mb-config.inc';
 class MBC_UserEvent_Birthday
 {
 
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = 500;
 
   /**
    * Message Broker connection to RabbitMQ
