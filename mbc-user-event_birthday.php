@@ -132,7 +132,7 @@ class MBC_UserEvent_Birthday
       $delivery_tags[] = $recipient['delivery_tag'];
     }
 
-    $templateName = 'mb-user-birthday';
+    $templateName = 'mb-userevent-birthday-v2';
     $templateContent = array();
     $message = array(
       'from_email' => 'no-reply@dosomething.org',

@@ -151,7 +151,7 @@ class MBC_UserEvent_Anniversary
       $delivery_tags[] = $recipient['delivery_tag'];
     }
 
-    $templateName = 'mb-user-anniversary';
+    $templateName = 'mb-userevent-anniversary-v2';
     $templateContent = array();
     $message = array(
       'from_email' => 'no-reply@dosomething.org',
