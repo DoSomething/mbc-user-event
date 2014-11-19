@@ -86,7 +86,11 @@ class MBC_UserEvent_Birthday
         'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
-        )
+        ),
+        'global_merge_vars' => array(
+          'name' => 'MEMBER_COUNT',
+          'content' => $this->getMemberCount()
+        ),
       );
       $messageCount--;
       $processedCount++;
@@ -141,6 +145,7 @@ class MBC_UserEvent_Birthday
       'to' => $to,
       'merge_vars' => $merge_vars,
       'tags' => array('user-event', 'birthday'),
+      '' => ''
     );
 
     // Use the Mandrill service
@@ -171,6 +176,67 @@ class MBC_UserEvent_Birthday
 
     echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
+  }
+
+  /**
+   * Gather current member count via Drupal end point.
+   * https://github.com/DoSomething/dosomething/wiki/API#get-member-count
+   *
+   *  POST https://beta.dosomething.org/api/v1/users/get_member_count
+   *
+   * @return string $memberCountFormatted
+   *   The string supplied byt the Drupal endpoint /get_member_count.
+   */
+  private function getMemberCount() {
+
+    $curlUrl = getenv('DS_DRUPAL_API_HOST');
+    $port = getenv('DS_DRUPAL_API_PORT');
+    if ($port != 0) {
+      $curlUrl .= ':' . $port;
+    }
+    $curlUrl .= '/api/v1/users/get_member_count';
+
+    // $post value sent in cURL call intentionally empty due to the endpoint
+    // expecting POST rather than GET where there's no POST values expected.
+    $post = array();
+
+    $result = $this->curlPOST($curlUrl, $post);
+    if (isset($result->readable)) {
+      $memberCountFormatted = $result->readable;
+    }
+    else {
+      $memberCountFormatted = NULL;
+    }
+    return $memberCountFormatted;
+
+  }
+
+  /**
+   * cURL POSTs
+   *
+   * @return object $result
+   *   The results retruned from the cURL call.
+   */
+  private function curlPOST($curlUrl, $post) {
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $curlUrl);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER,
+      array(
+        'Content-type: application/json',
+        'Accept: application/json'
+      )
+    );
+    curl_setopt($ch,CURLOPT_CONNECTTIMEOUT, 3);
+    curl_setopt($ch,CURLOPT_TIMEOUT, 20);
+    $jsonResult = curl_exec($ch);
+    $result = json_decode($jsonResult);
+    curl_close($ch);
+
+    return $result;
   }
 
 }
