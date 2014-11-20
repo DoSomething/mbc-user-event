@@ -1,7 +1,7 @@
 {
     "name": "DoSomething/mbc-user-event",
     "type": "library",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Consumer applications for the Message Broker system that consumes entries in the userEvent queues - birthday, anniversary, turning 13. The queue entries are sent to Mandrill as a single Send-Template request daily.",
     "keywords": ["message broker"],
     "homepage": "https://github.com/DoSomething/mbp-user-event",
