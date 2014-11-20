@@ -160,8 +160,10 @@ class MBC_UserEvent_Anniversary
       'to' => $to,
       'merge_vars' => $merge_vars,
       'global_merge_vars' => array(
-        'name' => 'MEMBER_COUNT',
-        'content' => $this->getMemberCount()
+        0 => array(
+          'name' => 'MEMBER_COUNT',
+          'content' => $this->getMemberCount()
+        ),
       ),
       'tags' => array('user-event', 'anniversary'),
     );

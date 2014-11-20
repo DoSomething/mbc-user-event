@@ -88,8 +88,10 @@ class MBC_UserEvent_Birthday
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
         ),
         'global_merge_vars' => array(
-          'name' => 'MEMBER_COUNT',
-          'content' => $this->getMemberCount()
+          0 => array(
+            'name' => 'MEMBER_COUNT',
+            'content' => $this->getMemberCount()
+          ),
         ),
       );
       $messageCount--;
