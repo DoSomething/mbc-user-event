@@ -103,7 +103,7 @@ class MBC_UserEvent_Birthday
         'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
-          'SUBSRIPTION_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
+          'SUBSRIPTIONS_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
         )
       );
       $messageCount--;
@@ -146,8 +146,8 @@ class MBC_UserEvent_Birthday
             'content' => $recipient['merge_vars']['FNAME'],
           ),
           1 => array(
-            'name' => 'SUBSRIPTION_LINK',
-            'content' => $recipient['merge_vars']['SUBSRIPTION_LINK'],
+            'name' => 'SUBSRIPTIONS_LINK',
+            'content' => $recipient['merge_vars']['SUBSRIPTIONS_LINK'],
           ),
         ),
       );
