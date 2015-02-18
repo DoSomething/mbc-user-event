@@ -13,8 +13,8 @@ use DoSomething\MBStatTracker\StatHat;
 
 // Load configuration settings common to the Message Broker system
 // symlinks in the project directory point to the actual location of the files
-require __DIR__ . '/mb-secure-config.inc';
-require __DIR__ . '/mb-config.inc';
+require_once __DIR__ . '/mb-secure-config.inc';
+require_once __DIR__ . '/mb-config.inc';
 
 class MBC_UserEvent_Birthday
 {
@@ -42,6 +42,20 @@ class MBC_UserEvent_Birthday
   private $channel;
 
   /**
+   * Collection of helper methods
+   *
+   * @var object
+   */
+  private $toolbox;
+
+  /**
+   * The MEMBER_COUNT value from the DoSomething.org API via MB_Toolbox
+   *
+   * @var string
+   */
+  private $memberCount;
+
+  /**
    * A list of recipients to send messages to
    */
   private $recipients;
@@ -60,6 +74,9 @@ class MBC_UserEvent_Birthday
     $this->channel = $this->messageBroker->connection->channel();
     $this->config = $config;
     $this->settings = $settings;
+
+    $this->toolbox = new MB_Toolbox($settings);
+    $this->memberCount = $this->toolbox->getDSMemberCount();
   }
 
   /**
@@ -86,13 +103,8 @@ class MBC_UserEvent_Birthday
         'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
-        ),
-        'global_merge_vars' => array(
-          0 => array(
-            'name' => 'MEMBER_COUNT',
-            'content' => $this->getMemberCount()
-          ),
-        ),
+          'SUBSRIPTIONS_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
+        )
       );
       $messageCount--;
       $processedCount++;
@@ -115,7 +127,7 @@ class MBC_UserEvent_Birthday
    */
   private function sendBirthdayEmails() {
 
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails START - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails START - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
     $to = array();
     $merge_vars = array();
@@ -133,10 +145,21 @@ class MBC_UserEvent_Birthday
             'name' => 'FNAME',
             'content' => $recipient['merge_vars']['FNAME'],
           ),
+          1 => array(
+            'name' => 'SUBSRIPTIONS_LINK',
+            'content' => $recipient['merge_vars']['SUBSRIPTIONS_LINK'],
+          ),
         ),
       );
       $delivery_tags[] = $recipient['delivery_tag'];
     }
+
+    $globalMergeVars = array(
+      0 => array(
+        'name' => 'MEMBER_COUNT',
+        'content' => $this->memberCount,
+      ),
+    );
 
     $templateName = 'mb-userevent-birthday-v2';
     $templateContent = array();
@@ -146,8 +169,8 @@ class MBC_UserEvent_Birthday
       'subject' => 'Happy Birthday from DoSomething.org',
       'to' => $to,
       'merge_vars' => $merge_vars,
+      'global_merge_vars' => $globalMergeVars,
       'tags' => array('user-event', 'birthday'),
-      '' => ''
     );
 
     // Use the Mandrill service
@@ -160,11 +183,11 @@ class MBC_UserEvent_Birthday
     // ack messages to remove them from the queue, trap errors
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
-        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
       }
       elseif (!$resultDetails['status'] == 'sent' && !$resultDetails['status'] == 'queued') {
-        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
       }
       else {
@@ -176,69 +199,8 @@ class MBC_UserEvent_Birthday
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
-  }
-
-  /**
-   * Gather current member count via Drupal end point.
-   * https://github.com/DoSomething/dosomething/wiki/API#get-member-count
-   *
-   *  POST https://beta.dosomething.org/api/v1/users/get_member_count
-   *
-   * @return string $memberCountFormatted
-   *   The string supplied byt the Drupal endpoint /get_member_count.
-   */
-  private function getMemberCount() {
-
-    $curlUrl = getenv('DS_DRUPAL_API_HOST');
-    $port = getenv('DS_DRUPAL_API_PORT');
-    if ($port != 0) {
-      $curlUrl .= ':' . $port;
-    }
-    $curlUrl .= '/api/v1/users/get_member_count';
-
-    // $post value sent in cURL call intentionally empty due to the endpoint
-    // expecting POST rather than GET where there's no POST values expected.
-    $post = array();
-
-    $result = $this->curlPOST($curlUrl, $post);
-    if (isset($result->readable)) {
-      $memberCountFormatted = $result->readable;
-    }
-    else {
-      $memberCountFormatted = NULL;
-    }
-    return $memberCountFormatted;
-
-  }
-
-  /**
-   * cURL POSTs
-   *
-   * @return object $result
-   *   The results retruned from the cURL call.
-   */
-  private function curlPOST($curlUrl, $post) {
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $curlUrl);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER,
-      array(
-        'Content-type: application/json',
-        'Accept: application/json'
-      )
-    );
-    curl_setopt($ch,CURLOPT_CONNECTTIMEOUT, 3);
-    curl_setopt($ch,CURLOPT_TIMEOUT, 20);
-    $jsonResult = curl_exec($ch);
-    $result = json_decode($jsonResult);
-    curl_close($ch);
-
-    return $result;
   }
 
 }
@@ -274,12 +236,14 @@ $config = array(
 );
 $settings = array(
   'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+  'ds_drupal_api_host' => getenv('DS_DRUPAL_API_HOST'),
+  'ds_drupal_api_port' => getenv('DS_DRUPAL_API_PORT'),
 );
 
-echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
 // Kick Off
 $ub = new MBC_UserEvent_Birthday($credentials, $config, $settings);
 $ub->consumeBirthdayQueue();
 
-echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
