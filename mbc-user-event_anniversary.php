@@ -115,7 +115,7 @@ class MBC_UserEvent_Anniversary
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
           'ANNIVERSARY' => $anniversary,
-          'SUBSRIPTIONS_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
+          'SUBSRIPTIONS_LINK' => $this->toolbox->subscriptionsLinkGenerator($messagePayload['email']),
         )
       );
       $messageCount--;
