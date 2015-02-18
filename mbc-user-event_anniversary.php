@@ -52,6 +52,13 @@ class MBC_UserEvent_Anniversary
   private $toolbox;
 
   /**
+   * The MEMBER_COUNT value from the DoSomething.org API via MB_Toolbox
+   *
+   * @var string
+   */
+  private $memberCount;
+
+  /**
    * A list of recipients to send messages to
    */
   private $recipients;
@@ -70,7 +77,9 @@ class MBC_UserEvent_Anniversary
     $this->channel = $this->messageBroker->connection->channel();
     $this->config = $config;
     $this->settings = $settings;
+
     $this->toolbox = new MB_Toolbox($settings);
+    $this->memberCount = $this->toolbox->getDSMemberCount();
   }
 
   /**
@@ -111,7 +120,7 @@ class MBC_UserEvent_Anniversary
         'global_merge_vars' => array(
           0 => array(
             'name' => 'MEMBER_COUNT',
-            'content' => $this->getMemberCount()
+            'content' => $this->memberCount,
           ),
         ),
       );
@@ -177,7 +186,7 @@ class MBC_UserEvent_Anniversary
       'global_merge_vars' => array(
         0 => array(
           'name' => 'MEMBER_COUNT',
-          'content' => $this->getMemberCount()
+          'content' => $this->memberCount,
         ),
       ),
       'tags' => array('user-event', 'anniversary'),
@@ -213,67 +222,6 @@ class MBC_UserEvent_Anniversary
 
     echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
 
-  }
-
-  /**
-   * Gather current member count via Drupal end point.
-   * https://github.com/DoSomething/dosomething/wiki/API#get-member-count
-   *
-   *  POST https://beta.dosomething.org/api/v1/users/get_member_count
-   *
-   * @return string $memberCountFormatted
-   *   The string supplied byt the Drupal endpoint /get_member_count.
-   */
-  private function getMemberCount() {
-
-    $curlUrl = getenv('DS_DRUPAL_API_HOST');
-    $port = getenv('DS_DRUPAL_API_PORT');
-    if ($port != 0) {
-      $curlUrl .= ':' . $port;
-    }
-    $curlUrl .= '/api/v1/users/get_member_count';
-
-    // $post value sent in cURL call intentionally empty due to the endpoint
-    // expecting POST rather than GET where there's no POST values expected.
-    $post = array();
-
-    $result = $this->curlPOST($curlUrl, $post);
-    if (isset($result->readable)) {
-      $memberCountFormatted = $result->readable;
-    }
-    else {
-      $memberCountFormatted = NULL;
-    }
-    return $memberCountFormatted;
-
-  }
-
-  /**
-   * cURL POSTs
-   *
-   * @return object $result
-   *   The results retruned from the cURL call.
-   */
-  private function curlPOST($curlUrl, $post) {
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $curlUrl);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER,
-      array(
-        'Content-type: application/json',
-        'Accept: application/json'
-      )
-    );
-    curl_setopt($ch,CURLOPT_CONNECTTIMEOUT, 3);
-    curl_setopt($ch,CURLOPT_TIMEOUT, 20);
-    $jsonResult = curl_exec($ch);
-    $result = json_decode($jsonResult);
-    curl_close($ch);
-
-    return $result;
   }
 
 }
