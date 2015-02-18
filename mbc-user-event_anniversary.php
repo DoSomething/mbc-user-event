@@ -116,13 +116,7 @@ class MBC_UserEvent_Anniversary
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
           'ANNIVERSARY' => $anniversary,
           'SUBSRIPTION_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
-        ),
-        'global_merge_vars' => array(
-          0 => array(
-            'name' => 'MEMBER_COUNT',
-            'content' => $this->memberCount,
-          ),
-        ),
+        )
       );
       $messageCount--;
       $processedCount++;
@@ -170,10 +164,21 @@ class MBC_UserEvent_Anniversary
             'name' => 'UID',
             'content' => $recipient['uid'],
           ),
+          3 => array(
+            'name' => 'SUBSRIPTION_LINK',
+            'content' => $recipient['merge_vars']['SUBSRIPTION_LINK'],
+          )
         ),
       );
       $delivery_tags[] = $recipient['delivery_tag'];
     }
+
+    $globalMergeVars = array(
+      0 => array(
+        'name' => 'MEMBER_COUNT',
+        'content' => $this->memberCount,
+      ),
+    );
 
     $templateName = 'mb-userevent-anniversary-v2';
     $templateContent = array();
@@ -183,12 +188,7 @@ class MBC_UserEvent_Anniversary
       'subject' => 'Happy Anniversary from DoSomething.org',
       'to' => $to,
       'merge_vars' => $merge_vars,
-      'global_merge_vars' => array(
-        0 => array(
-          'name' => 'MEMBER_COUNT',
-          'content' => $this->memberCount,
-        ),
-      ),
+      'global_merge_vars' => $globalMergeVars,
       'tags' => array('user-event', 'anniversary'),
     );
 
