@@ -13,8 +13,8 @@ use DoSomething\MBStatTracker\StatHat;
 
 // Load configuration settings common to the Message Broker system
 // symlinks in the project directory point to the actual location of the files
-require __DIR__ . '/mb-secure-config.inc';
-require __DIR__ . '/mb-config.inc';
+require_once __DIR__ . '/mb-secure-config.inc';
+require_once __DIR__ . '/mb-config.inc';
 
 class MBC_UserEvent_Anniversary
 {
@@ -144,7 +144,7 @@ class MBC_UserEvent_Anniversary
    */
   private function sendAnniversaryEmails() {
 
-    echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails START - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails START - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
     $to = array();
     $merge_vars = array();
@@ -204,11 +204,11 @@ class MBC_UserEvent_Anniversary
     // ack messages to remove them from the queue, trap errors
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
-        echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendAnniversaryEmails_MandrillERROR_invalid');
       }
       elseif (!$resultDetails['status'] == 'sent') {
-        echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Anniversary->sendAnniversaryEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendAnniversaryEmails_MandrillERROR_unknown');
       }
       else {
@@ -220,7 +220,7 @@ class MBC_UserEvent_Anniversary
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
-    echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Anniversary->sendAnniversaryEmails END: ' . count($this->recipients) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
   }
 
@@ -261,10 +261,10 @@ $settings = array(
   'ds_drupal_api_port' => getenv('DS_DRUPAL_API_PORT'),
 );
 
-echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
 // Kick Off
 $ua = new MBC_UserEvent_Anniversary($credentials, $config, $settings);
 $ua->consumeAnniversaryQueue();
 
-echo '------- mbp-user-event_anniversary END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbp-user-event_anniversary END: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
