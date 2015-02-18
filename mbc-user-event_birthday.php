@@ -13,8 +13,8 @@ use DoSomething\MBStatTracker\StatHat;
 
 // Load configuration settings common to the Message Broker system
 // symlinks in the project directory point to the actual location of the files
-require __DIR__ . '/mb-secure-config.inc';
-require __DIR__ . '/mb-config.inc';
+require_once __DIR__ . '/mb-secure-config.inc';
+require_once __DIR__ . '/mb-config.inc';
 
 class MBC_UserEvent_Birthday
 {
@@ -127,7 +127,7 @@ class MBC_UserEvent_Birthday
    */
   private function sendBirthdayEmails() {
 
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails START - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails START - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
     $to = array();
     $merge_vars = array();
@@ -183,11 +183,11 @@ class MBC_UserEvent_Birthday
     // ack messages to remove them from the queue, trap errors
     foreach($mandrillResults as $resultCount => $resultDetails) {
       if ($resultDetails['status'] == 'invalid') {
-        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "invalid" -> ' . $resultDetails['email'] . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendBirthdayEmails_MandrillERROR_invalid');
       }
       elseif (!$resultDetails['status'] == 'sent' && !$resultDetails['status'] == 'queued') {
-        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', "\n";
+        echo '******* MBC_UserEvent_Birthday->sendBirthdayEmails Mandrill ERROR: "Unknown" -> ' . print_r($resultDetails, TRUE) . ' as Send-Template submission - ' . date('D M j G:i:s T Y') . ' *******', PHP_EOL;
         $statHat->addStatName('sendBirthdayEmails_MandrillERROR_unknown');
       }
       else {
@@ -199,7 +199,7 @@ class MBC_UserEvent_Birthday
       $this->channel->basic_ack($delivery_tags[$resultCount]);
     }
 
-    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', "\n";
+    echo '------- MBC_UserEvent_Birthday->sendBirthdayEmails END: ' . (count($this->recipients) - 1) . ' messages sent as Mandrill Send-Template submission - ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
   }
 
@@ -240,10 +240,10 @@ $settings = array(
   'ds_drupal_api_port' => getenv('DS_DRUPAL_API_PORT'),
 );
 
-echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
 
 // Kick Off
 $ub = new MBC_UserEvent_Birthday($credentials, $config, $settings);
 $ub->consumeBirthdayQueue();
 
-echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', "\n";
+echo '------- mbp-user-event_birthday END: ' . date('D M j G:i:s T Y') . ' -------', PHP_EOL;
