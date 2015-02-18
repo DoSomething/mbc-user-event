@@ -42,6 +42,13 @@ class MBC_UserEvent_Birthday
   private $channel;
 
   /**
+   * Collection of helper methods
+   *
+   * @var object
+   */
+  private $toolbox;
+
+  /**
    * A list of recipients to send messages to
    */
   private $recipients;
@@ -60,6 +67,7 @@ class MBC_UserEvent_Birthday
     $this->channel = $this->messageBroker->connection->channel();
     $this->config = $config;
     $this->settings = $settings;
+    $this->toolbox = new MB_Toolbox($settings);
   }
 
   /**
@@ -86,6 +94,7 @@ class MBC_UserEvent_Birthday
         'delivery_tag' => $messageDetails->delivery_info['delivery_tag'],
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
+          'SUBSRIPTION_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
         ),
         'global_merge_vars' => array(
           0 => array(
@@ -274,6 +283,8 @@ $config = array(
 );
 $settings = array(
   'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+  'ds_drupal_api_host' => getenv('DS_DRUPAL_API_HOST'),
+  'ds_drupal_api_port' => getenv('DS_DRUPAL_API_PORT'),
 );
 
 echo '------- mbc-user-event_birthday START: ' . date('D M j G:i:s T Y') . ' -------', "\n";

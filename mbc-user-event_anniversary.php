@@ -43,7 +43,14 @@ class MBC_UserEvent_Anniversary
    * Configuration settings
    */
   private $channel;
-  
+
+  /**
+   * Collection of helper methods
+   *
+   * @var object
+   */
+  private $toolbox;
+
   /**
    * A list of recipients to send messages to
    */
@@ -63,6 +70,7 @@ class MBC_UserEvent_Anniversary
     $this->channel = $this->messageBroker->connection->channel();
     $this->config = $config;
     $this->settings = $settings;
+    $this->toolbox = new MB_Toolbox($settings);
   }
 
   /**
@@ -98,6 +106,7 @@ class MBC_UserEvent_Anniversary
         'merge_vars' => array(
           'FNAME' => $messagePayload['merge_vars']['FNAME'],
           'ANNIVERSARY' => $anniversary,
+          'SUBSRIPTION_LINK' => $toolbox->subscriptionsLinkGenerator($messagePayload['email']),
         )
       );
       $messageCount--;
@@ -294,6 +303,8 @@ $config = array(
 );
 $settings = array(
   'stathat_ez_key' => getenv("STATHAT_EZKEY"),
+  'ds_drupal_api_host' => getenv('DS_DRUPAL_API_HOST'),
+  'ds_drupal_api_port' => getenv('DS_DRUPAL_API_PORT'),
 );
 
 echo '------- mbc-user-event_anniversary START: ' . date('D M j G:i:s T Y') . ' -------', "\n";

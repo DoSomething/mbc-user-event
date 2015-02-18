@@ -17,7 +17,8 @@
         "videlalvaro/php-amqplib": "v2.1.0",
         "DoSomething/messagebroker-phplib": "0.1.*",
         "mandrill/mandrill": "1.0.50",
-        "dosomething/mb-stat-tracker": "v0.0.3"
+        "dosomething/mb-stat-tracker": "v0.0.3",
+        "dosomething/mb-toolbox": "0.3.*"
     },
     "require-dev": {
       "phpunit/phpunit": "3.7.*"
